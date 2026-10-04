@@ -814,9 +814,14 @@ function agyWindowKind(bucket: Record<string, unknown>): {
     stringValue(bucket.name),
   ]
     .filter((value): value is string => Boolean(value))
-    .join(" ")
-    .toLowerCase();
-  if (raw.includes("5h") || raw.includes("five")) {
+    .map((value) => value.toLowerCase());
+  if (
+    raw.some((value) =>
+      /^(?:(?:gemini|3p|third-party)[-_])?(?:5h|5-hour|five[ _-]hour)(?: limit)?$/.test(
+        value,
+      ),
+    )
+  ) {
     return {
       id: "5h",
       label: "5-hour",
@@ -825,7 +830,11 @@ function agyWindowKind(bucket: Record<string, unknown>): {
       windowSeconds: FIVE_HOURS_SECONDS,
     };
   }
-  if (raw.includes("week")) {
+  if (
+    raw.some((value) =>
+      /^(?:(?:gemini|3p|third-party)[-_])?weekly(?: limit)?$/.test(value),
+    )
+  ) {
     return {
       id: "weekly",
       label: "weekly",

@@ -141,6 +141,43 @@ describe("Antigravity quota parsing", () => {
     ]);
   });
 
+  it.each(["window", "bucketId", "bucket_id", "displayName", "name"])(
+    "leaves unfamiliar cycles in %s unmeasured",
+    (field) => {
+      for (const label of [
+        "biweekly",
+        "bi-weekly",
+        "bi_weekly",
+        "weekend",
+        "15h",
+        "five-day",
+        "five-hourly",
+      ]) {
+        for (const groupName of ["Gemini Models", "Claude and GPT Models"]) {
+          const result = normalizeAgyQuotaSummary({
+            groups: [
+              {
+                displayName: groupName,
+                buckets: [
+                  {
+                    [field === "bucket_id" ? "bucket_id" : "bucketId"]:
+                      "unfamiliar",
+                    [field]: label,
+                    remainingFraction: 0.9,
+                    resetTime: "2026-06-19T00:00:00.000Z",
+                  },
+                ],
+              },
+            ],
+          });
+          expect(result?.windows).toHaveLength(1);
+          expect(result?.windows[0]?.kind).toBe("unknown");
+          expect(result?.windows[0]?.windowSeconds).toBeUndefined();
+        }
+      }
+    },
+  );
+
   it("normalizes oneof remaining values", () => {
     const result = normalizeAgyQuotaSummary({
       groups: [
