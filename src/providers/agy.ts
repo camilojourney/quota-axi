@@ -46,6 +46,8 @@ const REQUEST_TIMEOUT_MS = 3_000;
 const CLI_QUOTA_TIMEOUT_MS = 15_000;
 const PROBE_BUDGET_MS = 10_000;
 const MAX_RESPONSE_BYTES = 1024 * 1024;
+const FIVE_HOURS_SECONDS = 18_000;
+const WEEK_SECONDS = 7 * 24 * 60 * 60;
 
 type AgyProcessSource = "agy" | "app";
 
@@ -714,6 +716,9 @@ function normalizeQuotaSummaryBucket(
       parseEpochOrIso(bucket.resetTime) ?? parseEpochOrIso(bucket.reset_time),
     resetText: stringValue(bucket.description),
   };
+  if (windowKind.windowSeconds !== undefined) {
+    result.windowSeconds = windowKind.windowSeconds;
+  }
   const remaining = remainingFraction(bucket);
   if (remaining !== undefined) {
     const percentUsed = clampPercent((1 - clampFraction(remaining)) * 100);
@@ -799,6 +804,7 @@ function agyWindowKind(bucket: Record<string, unknown>): {
   label: "5-hour" | "weekly" | "quota";
   kind: QuotaWindow["kind"];
   sortRank: number;
+  windowSeconds?: number;
 } {
   const raw = [
     stringValue(bucket.window),
@@ -816,6 +822,7 @@ function agyWindowKind(bucket: Record<string, unknown>): {
       label: "5-hour",
       kind: "session",
       sortRank: 0,
+      windowSeconds: FIVE_HOURS_SECONDS,
     };
   }
   if (raw.includes("week")) {
@@ -824,6 +831,7 @@ function agyWindowKind(bucket: Record<string, unknown>): {
       label: "weekly",
       kind: "weekly",
       sortRank: 1,
+      windowSeconds: WEEK_SECONDS,
     };
   }
   return { id: "unknown", label: "quota", kind: "unknown", sortRank: 2 };

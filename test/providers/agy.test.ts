@@ -65,6 +65,15 @@ afterEach(async () => {
   tempDir = undefined;
 });
 
+// The vendor names each bucket's window ("5h" or "weekly"), which fixes its
+// cycle length; quota-axi derives pace from that length plus resetsAt.
+const EXPECTED_WINDOW_SECONDS = [
+  ["gemini_5h", 18_000],
+  ["gemini_weekly", 604_800],
+  ["claude_gpt_5h", 18_000],
+  ["claude_gpt_weekly", 604_800],
+];
+
 describe("Antigravity quota parsing", () => {
   it("normalizes quota summary groups into session and weekly windows", () => {
     const result = normalizeAgyQuotaSummary(fixture("quota-summary.json"));
@@ -103,9 +112,9 @@ describe("Antigravity quota parsing", () => {
         resetsAt: "2026-06-20T00:39:54.000Z",
       },
     ]);
-    expect(result?.windows.every((w) => w.windowSeconds === undefined)).toBe(
-      true,
-    );
+    expect(
+      result?.windows.map(({ id, windowSeconds }) => [id, windowSeconds]),
+    ).toEqual(EXPECTED_WINDOW_SECONDS);
   });
 
   it("normalizes the Antigravity CLI 1.2.2 quota summary shape", () => {
@@ -153,7 +162,7 @@ describe("Antigravity quota parsing", () => {
       percentUsed: 50,
       percentRemaining: 50,
     });
-    expect(result?.windows[0]?.windowSeconds).toBeUndefined();
+    expect(result?.windows[0]?.windowSeconds).toBe(604_800);
   });
 
   it("normalizes the agy CLI /quota print envelope", () => {
@@ -178,9 +187,13 @@ describe("Antigravity quota parsing", () => {
         percentRemaining: 90,
       },
     ]);
-    expect(result?.windows.every((w) => w.windowSeconds === undefined)).toBe(
-      true,
-    );
+    expect(
+      result?.windows.map(({ id, windowSeconds }) => [id, windowSeconds]),
+    ).toEqual([
+      ["gemini_weekly", 604_800],
+      ["claude_gpt_5h", 18_000],
+      ["claude_gpt_weekly", 604_800],
+    ]);
   });
 
   it("falls back to model windows from user status payloads", () => {
